@@ -21,10 +21,17 @@
                                 is Phase 2). `:live-facts?` below is the
                                 phase-state marker a future caller checks
                                 before calling `growth.facts`.
-    Phase 2  assisted         — NOT IMPLEMENTED HERE. Would add `llm-advisor`
-                                against live data (and wire `growth.facts`
-                                into the OperationActor graph); every write
-                                still needs human approval.
+    Phase 2  assisted         — `growth.facts` IS now wired into the
+                                OperationActor graph, via the separate,
+                                explicit `growth.live` entry point
+                                (`facts->store-metrics` seeds a `Store` from
+                                live club-shinshi data, then `growth.operation/
+                                build` runs unchanged against it) — opt-in,
+                                NOT `growth.sim/-main`'s own demo default,
+                                which stays `seed-db` + `mock-advisor`
+                                unmodified. `llm-advisor` against live data is
+                                still not wired (mock-advisor only). Every
+                                write still needs human approval regardless.
     Phase 3  supervised auto  — the eventual target: policy-clean,
                                 high-confidence LOW-STAKES writes may
                                 auto-commit; high-stakes / creator-payout

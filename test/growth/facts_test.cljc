@@ -115,3 +115,52 @@
                  (facts/live-facts {} base-url secret)))
     (is (thrown? #?(:clj Exception :cljs js/Error)
                  (facts/live-facts {:http-fn happy-http-fn} base-url secret)))))
+
+;; ───────────────────────── facts->store-metrics (Phase 2 adapter) ─────────────────────────
+
+(deftest facts->store-metrics-keeps-every-non-error-field-under-its-own-key
+  (testing "revenue + metrics fields all survive, each under their own live key name"
+    (let [f  (facts/live-facts io base-url secret)
+          sm (facts/facts->store-metrics f)]
+      (is (= 50000 (:creator-gmv-jpy sm)))
+      (is (= 120000 (:ad-revenue-jpy sm)))
+      (is (= 12345 (:organic-pageviews sm)))
+      (is (= 4.2 (:organic-pv-growth-pct sm)))
+      (is (= 61.5 (:general-fill-pct sm)))
+      (is (contains? sm :adult-fill-pct))
+      (is (nil? (:adult-fill-pct sm)) "honest upstream null passes through the adapter too"))))
+
+(deftest facts->store-metrics-aliases-organic-pv-growth-pct-to-demo-datas-own-key
+  (testing "an existing :metric-reads [:organic-pageviews-mom-pct] request (growth.sim's op1) still resolves"
+    (let [f  (facts/live-facts io base-url secret)
+          sm (facts/facts->store-metrics f)]
+      (is (= 4.2 (:organic-pageviews-mom-pct sm))
+          "aliased from :organic-pv-growth-pct, demo-data's own name for the same H1-gate metric")
+      (is (= (:organic-pv-growth-pct sm) (:organic-pageviews-mom-pct sm))
+          "both the live name and the demo-data-compatible alias are present"))))
+
+(deftest facts->store-metrics-drops-error-markers-never-passes-a-fabricated-number
+  (testing "an :error-marker field (upstream ok=false, or a transport throw) is absent, not nil/0/fabricated"
+    (let [flaky-http-fn
+          (fn [{:keys [url method body] :as req}]
+            (if (and (= :post method) (= (str base-url "/_d1") url)
+                     (= "organic_pv_growth_pct" (:metric (:args (edn/read-string body)))))
+              {:status 200 :body (pr-str {:ok false :error "metric temporarily disabled"})}
+              (happy-http-fn req)))
+          f  (facts/live-facts {:http-fn flaky-http-fn :json-write pr-str :json-read edn/read-string}
+                                base-url secret)
+          sm (facts/facts->store-metrics f)]
+      (is (facts/error? (get-in f [:metrics :organic-pv-growth-pct]))
+          "sanity: the raw facts map really does carry an :error marker here")
+      (is (not (contains? sm :organic-pv-growth-pct))
+          "the adapter drops the errored field entirely")
+      (is (not (contains? sm :organic-pageviews-mom-pct))
+          "no alias is created from an errored source field either — never a fabricated number")
+      (is (= 12345 (:organic-pageviews sm)) "unrelated fields are unaffected"))))
+
+(deftest facts->store-metrics-on-an-all-error-facts-map-yields-an-empty-map
+  (testing "every field failing (e.g. secret rejected) yields {} — with-metrics on {} is a no-op seed, never garbage"
+    (let [rejecting-http-fn (fn [_] {:status 403 :body (pr-str {:ok false :error "forbidden"})})
+          f  (facts/live-facts {:http-fn rejecting-http-fn :json-write pr-str :json-read edn/read-string}
+                                base-url secret)]
+      (is (= {} (facts/facts->store-metrics f))))))
