@@ -9,27 +9,41 @@
 
     Phase 0  scaffold-only    — no writes at all. mock-advisor + MemStore
                                 only, no live club-shinshi data, no
-                                execution. **This build stays at Phase 0.**
-    Phase 1  read-only live   — NOT IMPLEMENTED HERE. Would add read-only
-                                live club-shinshi metrics (via `growth.facts`,
-                                itself a stub) — still no writes.
+                                execution. **This build's own default-phase
+                                stays at Phase 0.**
+    Phase 1  read-only live   — read-only live club-shinshi metrics are now
+                                a real, callable capability (`growth.facts/
+                                live-facts` + `fetch-live-facts!`, no longer
+                                a stub) — still no writes, and still not
+                                wired into `growth.operation`'s
+                                OperationActor graph (that wiring, plus an
+                                advisor that actually consumes live facts,
+                                is Phase 2). `:live-facts?` below is the
+                                phase-state marker a future caller checks
+                                before calling `growth.facts`.
     Phase 2  assisted         — NOT IMPLEMENTED HERE. Would add `llm-advisor`
-                                against live data; every write still needs
-                                human approval.
+                                against live data (and wire `growth.facts`
+                                into the OperationActor graph); every write
+                                still needs human approval.
     Phase 3  supervised auto  — the eventual target: policy-clean,
                                 high-confidence LOW-STAKES writes may
                                 auto-commit; high-stakes / creator-payout
                                 proposals still always escalate via the
                                 governor regardless of phase.
 
-  Phase 1 and 2 are each separate follow-up builds requiring their own
-  validation (see the accompanying ADR's open follow-ups: cloud-itonami
-  tenant/external-onboarding extension, and the ai-gftd-shinshi internal
-  dispatch-API secrets-sharing decision) before Phase 3 is reachable.
+  Phase 2 is a separate follow-up build requiring its own validation (see
+  the accompanying ADR's open follow-ups: cloud-itonami tenant/external-
+  onboarding extension) before Phase 3 is reachable. The ai-gftd-shinshi
+  internal dispatch-API secrets-sharing decision that used to block Phase 1
+  is resolved as of this build: club-shinshi's read-only metrics endpoints
+  are live and `growth.facts` calls them (see that namespace).
 
   `gate` runs AFTER `governor/check`, taking the policy disposition
   (:commit | :escalate | :hold) and returning the phase-adjusted disposition
-  plus a reason when the phase changed it.")
+  plus a reason when the phase changed it. `gate` itself is UNCHANGED by
+  Phase 1 landing — :writes/:auto for phases 0 and 1 are both empty, so the
+  write-gating behavior at phase 1 is identical to phase 0 (hold
+  everything); only :live-facts? differs.")
 
 (def write-ops
   #{:content-experiment :pricing-experiment :ad-spend-change
@@ -40,15 +54,28 @@
 
 (def phases
   "phase → {:label .. :writes <ops allowed to write> :auto <ops allowed to
-  auto-commit when policy-clean>}."
-  {0 {:label "scaffold-only"    :writes #{}                    :auto #{}}
-   1 {:label "read-only-live"   :writes #{}                    :auto #{}}
-   2 {:label "assisted-live"    :writes write-ops               :auto #{}}
-   3 {:label "supervised-auto"  :writes write-ops               :auto low-stakes-ops}})
+  auto-commit when policy-clean> :live-facts? <may call growth.facts/
+  live-facts for read-only live club-shinshi metrics>}."
+  {0 {:label "scaffold-only"    :writes #{}         :auto #{}              :live-facts? false}
+   1 {:label "read-only-live"   :writes #{}         :auto #{}              :live-facts? true}
+   2 {:label "assisted-live"    :writes write-ops    :auto #{}              :live-facts? true}
+   3 {:label "supervised-auto"  :writes write-ops    :auto low-stakes-ops   :live-facts? true}})
 
-;; This build stays at Phase 0 (scaffold: mock advisor + MemStore only, no
-;; live data, no execution) — see the accompanying ADR.
+;; This build's own default-phase stays at Phase 0 (scaffold: mock advisor +
+;; MemStore only, no live data, no execution) — see the accompanying ADR.
+;; Phase 1 (live-facts-enabled) is now reachable in code by passing
+;; `{:phase 1}` in an operation's context; it is just not this repo's
+;; default yet.
 (def default-phase 0)
+
+(defn live-facts-enabled?
+  "True from Phase 1 onward — the phase-state marker a caller checks before
+  invoking `growth.facts/live-facts` (or `fetch-live-facts!`). Still
+  strictly read-only: this predicate never affects `:writes`/`:auto`, and
+  `growth.operation`'s OperationActor graph does not call `growth.facts` in
+  this build regardless of phase — that wiring is a Phase 2 follow-up."
+  [phase]
+  (boolean (:live-facts? (get phases phase (get phases default-phase)))))
 
 (defn gate
   "Adjust a policy disposition for the rollout phase. Returns
