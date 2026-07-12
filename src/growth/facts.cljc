@@ -224,9 +224,15 @@
   `growth.sim`'s op1) reads real data unchanged when pointed at a live-
   seeded store instead of the demo one."
   [facts]
-  (let [drop-errors (fn [m] (into {} (remove (fn [[_ v]] (error? v))) m))
-        revenue'    (drop-errors (:revenue facts))
-        metrics'    (drop-errors (:metrics facts))]
+  (let [;; `:revenue` can itself BE a single error marker (fetch-revenue's
+        ;; whole-request failure, e.g. :http-status/:transport) rather than a
+        ;; submap of individually-fetched fields (unlike `:metrics`, which is
+        ;; always assembled one `fetch-metric` call per name) — check that
+        ;; case first, or its :reason/:detail keys would be mistaken for real
+        ;; revenue fields by the per-key filter below.
+        safe-map (fn [m] (if (error? m) {} (into {} (remove (fn [[_ v]] (error? v))) m)))
+        revenue' (safe-map (:revenue facts))
+        metrics' (safe-map (:metrics facts))]
     (cond-> (merge revenue' metrics')
       (contains? metrics' :organic-pv-growth-pct)
       (assoc :organic-pageviews-mom-pct (:organic-pv-growth-pct metrics')))))
