@@ -10,6 +10,15 @@
     - the Store     (MemStore | DatomicStore | kotoba-server) — `store` arg
     - the Advisor   (mock | real LLM)                          — :advisor opt
     - the Phase     (0→3 rollout)                              — :phase in ctx
+    - the Publisher (mock | real app-aozora, `growth.aozora`)  — :publisher opt
+
+  The Publisher is the actor's outbound SPEECH surface — NOT actuation. After
+  a proposal successfully commits, `:commit` calls `publish!` for the actor's
+  own social-post announcements (`:marketing-copy` / `:creator-outreach`
+  only) and records the outcome as an audit fact. It never calls the network
+  directly except through the injected Publisher (default: `mock-publisher`,
+  so every caller that doesn't pass `:publisher` keeps today's behavior
+  unchanged).
 
   One graph run = one growth operation (intake → advise → govern → decide →
   commit | hold | approval). No unbounded inner loop — each operation is
@@ -25,7 +34,16 @@
             [growth.growthllm :as growthllm]
             [growth.governor :as governor]
             [growth.phase :as phase]
-            [growth.store :as store]))
+            [growth.store :as store]
+            [growth.publisher :as publisher]))
+
+(def ^:private publishable-ops
+  "Effects that are the actor's own SPEECH (a social-post announcement) —
+  NOT `:content-experiment` (changes product UI/content, not an announcement)
+  and NOT the three high-stakes ops (`:pricing-experiment` /
+  `:ad-spend-change` / `:ppv-terms-change`; those never reach `:commit` at
+  today's phases without a human approval, and are not announcements either)."
+  #{:marketing-copy :creator-outreach})
 
 (defn- commit-fact [request context proposal]
   {:t          :growth.effect/committed
@@ -46,10 +64,14 @@
   "Compiles an OperationActor graph bound to `store` (any `growth.store/Store`).
   opts:
     :advisor      — a `growth.growthllm/Advisor` (default: mock-advisor)
-    :checkpointer — langgraph checkpointer (default: in-mem)"
-  [store & [{:keys [advisor checkpointer]
+    :checkpointer — langgraph checkpointer (default: in-mem)
+    :publisher    — a `growth.publisher/Publisher` (default: mock-publisher;
+                    every existing caller that omits this keeps today's
+                    behavior unchanged)"
+  [store & [{:keys [advisor checkpointer publisher]
              :or   {advisor      (growthllm/mock-advisor)
-                    checkpointer (cp/mem-checkpointer)}}]]
+                    checkpointer (cp/mem-checkpointer)
+                    publisher    (publisher/mock-publisher)}}]]
   (-> (g/state-graph
        {:channels
         {:request     {:default nil}
@@ -118,13 +140,29 @@
                                                        [{:rule :approver-rejected}]))
                             {:t :growth.audit/approval-rejected})]})))
 
-      ;; Commit — the ONLY node that writes the SSoT + audit ledger.
+      ;; Commit — the ONLY node that writes the SSoT + audit ledger. After the
+      ;; SSoT + effect-committed fact land, a low-stakes "own speech" proposal
+      ;; (:marketing-copy / :creator-outreach) is published via the injected
+      ;; Publisher — this is the actor announcing its own cleared proposal,
+      ;; not actuation. A publish failure is caught and recorded, never
+      ;; thrown uncaught out of :commit.
       (g/add-node :commit
         (fn [{:keys [request context proposal record]}]
           (store/commit-record! store record)
           (let [f (commit-fact request context proposal)]
             (store/append-ledger! store f)
-            {:audit [f]})))
+            (let [pf (when (contains? publishable-ops (:effect proposal))
+                       (try
+                         (let [result (publisher/publish! publisher
+                                                          {:text (:summary proposal)
+                                                           :collection publisher/collection})]
+                           {:t :growth.audit/published
+                            :op (:op request) :uri (:uri result) :cid (:cid result)})
+                         (catch #?(:clj Exception :cljs :default) e
+                           {:t :growth.audit/publish-failed
+                            :op (:op request) :error (ex-message e)})))]
+              (when pf (store/append-ledger! store pf))
+              {:audit (cond-> [f] pf (conj pf))}))))
 
       ;; Hold — write the rejection to the ledger; no SSoT mutation.
       (g/add-node :hold
