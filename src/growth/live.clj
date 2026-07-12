@@ -17,10 +17,20 @@
   promise means every consumer of its JVM host-fn brings its own http-kit/
   jsonista, added here only under the :run-live alias, never the base deps).
 
+  growth-LLM advisor: this entry point (ONLY this entry point --
+  growth.sim/-main stays mock-advisor, unchanged) wires a REAL LLM --
+  growth.murakumo/murakumo-model (itonami's self-hosted murakumo.cloud
+  gateway, qwen-agentworld-35b-a3b) via growth.growthllm/llm-advisor. The
+  advisor's own proposal is still censored end-to-end by the same
+  MarketingGovernor/phase gate as the mock path -- swapping the advisor
+  never changes that invariant.
+
   Run: clojure -M:dev:run-live"
   (:require [langchain.jvm :as jvm]
             [langgraph.graph :as g]
             [growth.facts :as facts]
+            [growth.growthllm :as growthllm]
+            [growth.murakumo :as murakumo]
             [growth.store :as store]
             [growth.operation :as op]
             [growth.report :as report]))
@@ -36,9 +46,19 @@
     (let [live         (facts/live-facts io facts/default-base-url (facts/read-secret!))
           live-metrics (facts/facts->store-metrics live)
           db           (store/with-metrics (store/seed-db) live-metrics)
-          actor        (op/build db)
+          token        (murakumo/read-token!)
+          chat-model   (murakumo/murakumo-model
+                        (assoc io :api-key token))
+          advisor      (growthllm/llm-advisor chat-model)
+          actor        (op/build db {:advisor advisor})
           ctx          {:actor-id "growth-llm" :phase 3}]
-      (println "── LIVE club-shinshi facts ──")
+      (println "── advisor ──")
+      (println (str "  murakumo (real LLM, " murakumo/default-model " via " murakumo/default-url ")"
+                     (if token
+                       (str " — " murakumo/token-env-var " set, x-api-key sent")
+                       (str " — " murakumo/token-env-var " not set, x-api-key omitted"))
+                     " — NOT growth.sim/-main's mock-advisor"))
+      (println "\n── LIVE club-shinshi facts ──")
       (println (pr-str live))
       (println "\n── adapted store metrics (demo-data's :organic-pageviews-mom-pct/:ad-revenue-jpy/")
       (println "   :creator-gmv-jpy keys kept, plus every other live metric under its own key) ──")
