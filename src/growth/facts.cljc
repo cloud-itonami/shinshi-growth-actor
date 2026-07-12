@@ -1,12 +1,13 @@
 (ns growth.facts
   "Phase 1 read-only LIVE-metrics adapter for club-shinshi's already-live
-  internal metrics API (`https://shinshi.club`). Still NOT wired into
-  `growth.operation` or `growth.sim` in this build — this namespace only
-  adds the *capability* to fetch live facts; nothing calls it automatically
-  yet, and nothing here writes to club-shinshi or to a `growth.store/Store`.
-  `growth.store/seed-db`'s demo snapshot remains the only data source the
-  actor graph itself reads. Wiring an advisor against this data (Phase 2)
-  and any execution/auto-commit/publishing (Phase 3) are out of scope here.
+  internal metrics API (`https://shinshi.club`). `facts->store-metrics`
+  (below) adapts a `live-facts` result into the actor's Store shape; the
+  OperationActor graph itself is wired against LIVE data via the separate,
+  explicit `growth.live` entry point (Phase 2, opt-in — `growth.sim/-main`'s
+  own demo default is completely unchanged, still `growth.store/seed-db` +
+  `mock-advisor`). Nothing here writes to club-shinshi or to a
+  `growth.store/Store` directly. Any execution/auto-commit/publishing
+  (Phase 3) is out of scope here.
 
   Calls two allow-listed, read-only endpoints (ADR-2607040900 follow-up,
   now landed on the club-shinshi side):
@@ -204,3 +205,34 @@
   `live-facts`. `base-url` defaults to `default-base-url`."
   [io & [base-url]]
   (live-facts io (or base-url default-base-url) (read-secret!)))
+
+;; ───────────────────────── store adapter (Phase 2) ─────────────────────────
+
+(defn facts->store-metrics
+  "Adapts a `live-facts` result into the flat metric-key→value map
+  `growth.store/with-metrics` expects. `:error?` markers are DROPPED, never
+  passed through — a metric growth-LLM never asked for is simply absent,
+  same as an untouched key in `growth.store/demo-data`; it must never look
+  like a real number.
+
+  Every non-error `:revenue`/`:metrics` field is kept under its own live key
+  name (e.g. `:creator-gmv-jpy`, `:organic-pageviews`) — this EXTENDS
+  demo-data's 3-key set, it doesn't narrow to it. `:organic-pv-growth-pct`
+  is additionally aliased to `:organic-pageviews-mom-pct` (demo-data's own
+  name for the same H1-gate metric, see `growth.store/demo-data`) so an
+  existing `:metric-reads [:organic-pageviews-mom-pct]` request (e.g.
+  `growth.sim`'s op1) reads real data unchanged when pointed at a live-
+  seeded store instead of the demo one."
+  [facts]
+  (let [;; `:revenue` can itself BE a single error marker (fetch-revenue's
+        ;; whole-request failure, e.g. :http-status/:transport) rather than a
+        ;; submap of individually-fetched fields (unlike `:metrics`, which is
+        ;; always assembled one `fetch-metric` call per name) — check that
+        ;; case first, or its :reason/:detail keys would be mistaken for real
+        ;; revenue fields by the per-key filter below.
+        safe-map (fn [m] (if (error? m) {} (into {} (remove (fn [[_ v]] (error? v))) m)))
+        revenue' (safe-map (:revenue facts))
+        metrics' (safe-map (:metrics facts))]
+    (cond-> (merge revenue' metrics')
+      (contains? metrics' :organic-pv-growth-pct)
+      (assoc :organic-pageviews-mom-pct (:organic-pv-growth-pct metrics')))))
