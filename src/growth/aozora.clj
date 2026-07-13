@@ -12,7 +12,20 @@
   Publication is the actor's own SPEECH — NOT actuation.
 
   JVM-only I/O namespace by convention (.clj); see `growth.cacao`'s docstring
-  for the kototama/cljs porting note."
+  for the kototama/cljs porting note.
+
+  `:json-read` must return KEYWORD keys (e.g. `langchain.jvm/json-read`,
+  jsonista's `keyword-keys-object-mapper` — this repo's actual convention,
+  used everywhere else here: `growth.facts`, `growth.murakumo`, `growth.live`).
+  This differs from the reference `shinshi.aozora` this was ported from,
+  which is injected `clojure.data.json/read-str` (STRING keys by default) by
+  its own caller — a real, found-in-production bug in an earlier version of
+  this file used `(get sbody \"accessJwt\")` (string-keyed) against a
+  keyword-keyed `json-read`, so `accessJwt`/`uri`/`cid` extraction silently
+  returned nil and `createSession` always looked like it failed even on a
+  real HTTP 200 (found running `clojure -M:dev:run-live` for real — every
+  manual `createSession` retry outside this fn succeeded at 200, but
+  `publish!` itself always threw \"aozora createSession failed\")."
   (:require [clojure.string :as str]
             [growth.cacao :as cacao]
             [growth.publisher :as publisher])
@@ -44,7 +57,10 @@
     :identity    {:private-key :did …} from cacao/load-or-create-identity!
     :leash       a member CACAO b64 (the revocable off-switch); nil → record
                  attributed to the actor's own did:key (depth-1 self-mint)
-    :json-write  :json-read  injected JSON fns (e.g. clojure.data.json)
+    :json-write  :json-read  injected JSON fns — :json-read MUST return
+                 keyword keys (e.g. `langchain.jvm/json-read`; NOT
+                 `clojure.data.json/read-str` without `:key-fn keyword` —
+                 see ns docstring)
     :http-fn     optional override (default jvm-http-fn)"
   [{:keys [pds identity json-write json-read http-fn]
     :or   {pds default-pds http-fn jvm-http-fn}}]
@@ -70,7 +86,7 @@
                             :headers {"Content-Type" "application/json"}
                             :body    (json-write {:cacao cacao})})
             sbody (json-read (:body sess))
-            jwt   (get sbody "accessJwt")]
+            jwt   (:accessJwt sbody)]
         (when-not (and (= 200 (:status sess)) jwt)
           (throw (ex-info "aozora createSession failed"
                           {:status (:status sess) :body (:body sess)})))
@@ -89,4 +105,4 @@
           (when-not (= 200 (:status resp))
             (throw (ex-info "aozora createRecord failed"
                             {:status (:status resp) :body (:body resp)})))
-          {:uri (get rbody "uri") :cid (get rbody "cid")})))))
+          {:uri (:uri rbody) :cid (:cid rbody)})))))
