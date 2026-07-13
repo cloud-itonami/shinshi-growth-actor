@@ -25,18 +25,33 @@
   MarketingGovernor/phase gate as the mock path -- swapping the advisor
   never changes that invariant.
 
+  Publisher: also wires a REAL growth.aozora/aozora-publisher (this
+  entry point ONLY -- op/build's own default stays mock-publisher for every
+  other caller). Loads/creates this actor's own persisted identity at
+  `.growth/identity.edn` (gitignored; see growth.cacao) -- the actor's own
+  did:key, self-sovereign, never a human-handed token. A committed
+  :marketing-copy / :creator-outreach proposal (see growth.operation's
+  publishable-ops) is published for real to the aozora PDS under that DID.
+
   Run: clojure -M:dev:run-live"
   (:require [langchain.jvm :as jvm]
             [langgraph.graph :as g]
             [growth.facts :as facts]
             [growth.growthllm :as growthllm]
             [growth.murakumo :as murakumo]
+            [growth.cacao :as cacao]
+            [growth.aozora :as aozora]
             [growth.store :as store]
             [growth.operation :as op]
             [growth.report :as report]))
 
 (def ^:private io
   {:http-fn jvm/jvm-http-fn :json-write jvm/json-write :json-read jvm/json-read})
+
+(def ^:private identity-path
+  "This actor's persisted Ed25519 identity — gitignored, generated on first
+  use by growth.cacao/load-or-create-identity! if absent."
+  ".growth/identity.edn")
 
 (defn -main [& _]
   (if-not (facts/read-secret!)
@@ -50,7 +65,9 @@
           chat-model   (murakumo/murakumo-model
                         (assoc io :api-key token))
           advisor      (growthllm/llm-advisor chat-model)
-          actor        (op/build db {:advisor advisor})
+          identity     (cacao/load-or-create-identity! identity-path)
+          publisher    (aozora/aozora-publisher (assoc io :identity identity))
+          actor        (op/build db {:advisor advisor :publisher publisher})
           ctx          {:actor-id "growth-llm" :phase 3}]
       (println "── advisor ──")
       (println (str "  murakumo (real LLM, " murakumo/default-model " via " murakumo/default-url ")"
@@ -58,6 +75,9 @@
                        (str " — " murakumo/token-env-var " set, x-api-key sent")
                        (str " — " murakumo/token-env-var " not set, x-api-key omitted"))
                      " — NOT growth.sim/-main's mock-advisor"))
+      (println "── publisher ──")
+      (println (str "  aozora (REAL, " (:did identity) " via " aozora/default-pds ")"
+                     " — NOT op/build's own default mock-publisher"))
       (println "\n── LIVE club-shinshi facts ──")
       (println (pr-str live))
       (println "\n── adapted store metrics (demo-data's :organic-pageviews-mom-pct/:ad-revenue-jpy/")
@@ -77,6 +97,23 @@
                      (get-in res2 [:state :disposition])))
           (println "  → disposition =" (get-in res [:state :disposition])
                    " (confidence" (get-in res [:state :verdict :confidence]) ")")))
+
+      (println "\n── op2  marketing-copy against LIVE :organic-pv-growth-pct (publishable — see")
+      (println "        growth.operation/publishable-ops) ──")
+      (let [res (g/run* actor {:request {:op :marketing-copy :hyp-id :H1
+                                         :metric-reads [:organic-pv-growth-pct]}
+                               :context ctx}
+                        {:thread-id "live-op2"})
+            res (if (= :interrupted (:status res))
+                  (g/run* actor
+                          {:approval {:status :approved :by "itonami-operator"}}
+                          {:thread-id "live-op2" :resume? true})
+                  res)]
+        (println "  → disposition =" (get-in res [:state :disposition])
+                 " (confidence" (get-in res [:state :verdict :confidence]) ")")
+        (when-let [pub (last (filter #(#{:growth.audit/published :growth.audit/publish-failed} (:t %))
+                                     (:audit (:state res))))]
+          (println "  →" (name (:t pub)) (pr-str (dissoc pub :t)))))
 
       (println "\n── audit ledger ──")
       (println (report/audit-ledger-text db))
