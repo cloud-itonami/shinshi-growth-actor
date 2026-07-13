@@ -5,7 +5,20 @@
   `growth.facts`/`growth.live` I/O-injection convention — no
   `clojure.data.json` dependency needed). No test in this namespace touches
   `pds.aozora.app` or any other network endpoint. Adapted from
-  `shinshi.aozora-test` (`jk-luxury/club-shinshi/20-actors/shinshi`)."
+  `shinshi.aozora-test` (`jk-luxury/club-shinshi/20-actors/shinshi`).
+
+  IMPORTANT: fixture bodies use KEYWORD keys (`{:accessJwt ..}`, not
+  `{\"accessJwt\" ..}`) — this simulates what `langchain.jvm/json-read`
+  (jsonista's keyword-keys-object-mapper, this repo's REAL production
+  `:json-read`) actually returns from parsing a real JSON response, not
+  what `clojure.data.json/read-str` returns by default (string keys, which
+  is what club-shinshi's own `shinshi.aozora` is injected with). An earlier
+  version of both this file and `growth.aozora` itself used string-keyed
+  fixtures + string-keyed `get` lookups — the tests passed, but
+  `clojure -M:dev:run-live` failed for real every time (`createSession`
+  always looked rejected even on a genuine HTTP 200, because
+  `(get sbody \"accessJwt\")` against a keyword-keyed real response is
+  always nil). Keep these keyword-keyed."
   (:require [clojure.test :refer [deftest is testing]]
             [clojure.string :as str]
             [clojure.edn :as edn]
@@ -30,9 +43,9 @@
   (let [id    (cacao/generate-identity)
         calls (atom [])
         http  (fake-http calls
-                         {"createSession" {:status 200 :body (pr-str {"accessJwt" "jwt-1"})}
+                         {"createSession" {:status 200 :body (pr-str {:accessJwt "jwt-1"})}
                           "createRecord"  {:status 200 :body (pr-str
-                                                              {"uri" "at://did/coll/rkey" "cid" "bafy1"})}})
+                                                              {:uri "at://did/coll/rkey" :cid "bafy1"})}})
         pub   (aozora/aozora-publisher (merge io {:identity id :http-fn http}))
         res   (publisher/publish! pub {:text "hello aozora"})]
     (testing "returns uri + cid from createRecord"
@@ -64,8 +77,8 @@
   (let [id    (cacao/generate-identity)
         calls (atom [])
         http  (fake-http calls
-                         {"createSession" {:status 200 :body (pr-str {"accessJwt" "jwt-1"})}
-                          "createRecord"  {:status 200 :body (pr-str {"uri" "u" "cid" "c"})}})
+                         {"createSession" {:status 200 :body (pr-str {:accessJwt "jwt-1"})}
+                          "createRecord"  {:status 200 :body (pr-str {:uri "u" :cid "c"})}})
         pub   (aozora/aozora-publisher (merge io {:identity id :http-fn http}))]
     (publisher/publish! pub {:text "t" :collection "com.example.other" :rkey "r1"})
     (let [body (edn/read-string (:body (second @calls)))]
@@ -85,7 +98,7 @@
 (deftest publish-fails-on-record-error
   (let [id   (cacao/generate-identity)
         http (fake-http (atom [])
-                        {"createSession" {:status 200 :body (pr-str {"accessJwt" "jwt-1"})}
+                        {"createSession" {:status 200 :body (pr-str {:accessJwt "jwt-1"})}
                          "createRecord"  {:status 500 :body (pr-str {"error" "boom"})}})
         pub  (aozora/aozora-publisher (merge io {:identity id :http-fn http}))]
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"createRecord failed"
