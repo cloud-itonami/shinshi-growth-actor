@@ -33,8 +33,9 @@
   :marketing-copy / :creator-outreach proposal (see growth.operation's
   publishable-ops) is published for real to the aozora PDS under that DID.
 
-  Run: clojure -M:dev:run-live"
-  (:require [langchain.jvm :as jvm]
+  Run: KOTOBA_REPOSITORY_STATE_FILE=/path/to/state.edn clojure -M:dev:run-live"
+  (:require [langchain.edn-persist :as edn-persist]
+            [langchain.jvm :as jvm]
             [langgraph.graph :as g]
             [growth.facts :as facts]
             [growth.growthllm :as growthllm]
@@ -60,7 +61,10 @@
         (System/exit 1))
     (let [live         (facts/live-facts io facts/default-base-url (facts/read-secret!))
           live-metrics (facts/facts->store-metrics live)
-          db           (store/with-metrics (store/seed-db) live-metrics)
+          db           (store/datomic-store
+                        (assoc (store/demo-data) :metrics live-metrics)
+                        (edn-persist/required-persist-from-env
+                         "actor/shinshi-growth"))
           token        (murakumo/read-token!)
           chat-model   (murakumo/murakumo-model
                         (assoc io :api-key token))
