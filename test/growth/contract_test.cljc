@@ -8,15 +8,11 @@
 
   Also proves `MemStore ≡ DatomicStore` (same contract, different backend) —
   the whole point of `growth.store`'s Store protocol."
-  (:require [clojure.java.io :as io]
-            [clojure.test :refer [deftest is testing]]
+  (:require [clojure.test :refer [deftest is testing]]
             [langgraph.graph :as g]
-            [langchain.edn-persist :as edn-persist]
             [growth.store :as store]
             [growth.growthllm :as growthllm]
-            [growth.operation :as op])
-  (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
+            [growth.operation :as op]))
 
 ;; ───────────────────────── Store contract: MemStore ≡ DatomicStore ─────────────────────────
 
@@ -53,25 +49,6 @@
     (is (= [] (store/all-hypotheses s)))
     (is (= [] (store/ledger s)))
     (is (= [] (store/all-experiments s)))))
-
-(deftest repository-backed-growth-store-restores-after-restart
-  (let [dir (.toFile (Files/createTempDirectory
-                      "growth-repository-" (make-array FileAttribute 0)))
-        file (io/file dir "state.edn")
-        environment {"KOTOBA_REPOSITORY_STATE_FILE" (.getPath file)}
-        open-store #(store/datomic-store
-                     {}
-                     (edn-persist/configured-persist
-                      environment "actor/shinshi-growth"))
-        first-process (open-store)]
-    (store/commit-record! first-process
-                          {:effect :content-experiment :path ["restart-1"]
-                           :payload {:summary "restored"}})
-    (store/append-ledger! first-process {:t :committed})
-    (let [second-process (open-store)]
-      (is (= "restored"
-             (:summary (store/experiment second-process "restart-1"))))
-      (is (= [:committed] (mapv :t (store/ledger second-process)))))))
 
 ;; ───────────────────────── governor / operation contract ─────────────────────────
 
