@@ -166,10 +166,12 @@
 
 (defn datomic-store
   "A DatomicStore (langchain.db backend) seeded from `data`
-  ({:hypotheses .. :metrics ..}); empty when omitted."
-  ([] (datomic-store {}))
-  ([{:keys [hypotheses metrics]}]
-   (let [s (->DatomicStore (d/create-conn schema))]
+  ({:hypotheses .. :metrics ..}); empty when omitted. PERSIST is the optional
+  sealed transaction append/read port; queries remain local."
+  ([] (datomic-store {} nil))
+  ([data] (datomic-store data nil))
+  ([{:keys [hypotheses metrics]} persist]
+   (let [s (->DatomicStore (d/create-conn schema persist))]
      (-> s (with-hypotheses hypotheses) (with-metrics metrics)))))
 
 (defn datomic-seed-db
