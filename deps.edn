@@ -3,9 +3,7 @@
  ;; all .cljc → portable to JVM / SCI / ClojureScript / GraalVM).
  ;; (2026-07 org-wide *-clj rename: orgs/kotoba-lang/*)
  :deps {io.github.kotoba-lang/langgraph
-        {:local/root "../../kotoba-lang/langgraph"}
-        io.github.kotoba-lang/langchain
-        {:git/sha "5f51481af47d5dad9b812c6298b5a66dc6fbb179"}}
+        {:local/root "../../kotoba-lang/langgraph"}}
  :aliases
  {;; offline workspace dev — pin transitive langchain to local checkout
   :dev {:override-deps

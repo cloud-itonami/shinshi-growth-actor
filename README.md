@@ -65,8 +65,6 @@ human. Soft cases (low confidence / high-stakes / creator-payout-touching)
 always go to the human approval workflow — even when the proposal is
 otherwise clean and high-confidence.
 
-The deterministic, privacy-safe aggregate metric contract for acquisition, activation, conversion, paid net revenue, and retention is defined in `src/growth/metrics.cljc`, with a typed EDN fixture in `test/fixtures/growth_metrics.edn`. Formula, versioning, rounding, null, cohort, and operator rules are documented in `docs/operator-guide.md`.
-
 ## Layout
 
 | File | Actor / role |
@@ -79,10 +77,6 @@ The deterministic, privacy-safe aggregate metric contract for acquisition, activ
 | `src/growth/facts.clj` | **production adapter STUB** — NOT wired; documents the `ai-gftd-shinshi` internal D1 dispatch API this would eventually call, and the secrets-sharing decision that blocks it |
 | `src/growth/report.cljc` | plain-text views over the hypothesis backlog / experiment ledger / audit ledger |
 | `src/growth/sim.cljc` | demo driver (`clojure -M:dev:run`) |
-| `src/growth/metrics.cljc` | versioned aggregate metric definitions, closed validation, and deterministic integer calculations |
-| `src/growth/tenant_onboarding.cljc` | closed offline EDN contract for tenant identity, two-human approval, allowed capabilities, and audit ownership; never provisions credentials |
-| `src/growth/revenue_agent.cljc` | bounded governed revenue tick: consumes injected live read-only aggregate facts, enforces tenant capabilities and explicit human decisions, ranks approved experiments, and emits audit events without actuation |
-| `test/growth/metrics_test.cljc` | golden fixture, privacy, validation, rounding, zero-denominator, and formula tests |
 | `test/growth/contract_test.cljc` | MemStore ≡ DatomicStore parity · no-actuation (malicious proposal → hold) · high-stakes-always-escalates · dark-pattern-rejected · confidence-floor · phase-0-holds-everything — **13 tests / 44 assertions, 0 failures** |
 
 ## Run
