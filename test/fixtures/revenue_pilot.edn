@@ -1,0 +1,28 @@
+{:plan
+ {:pilot/id :pilot/checkout-copy-2026-08
+  :pilot/cohort {:dimension/type :campaign :dimension/value "checkout-copy-v1"}
+  :pilot/baseline-window {:window/start "2026-07-01T00:00:00Z"
+                          :window/end "2026-07-15T00:00:00Z"
+                          :window/timezone "UTC"}
+  :pilot/measurement-window {:window/start "2026-07-15T00:00:00Z"
+                             :window/end "2026-07-29T00:00:00Z"
+                             :window/timezone "UTC"}
+  :pilot/metric :revenue/paid-net
+  :pilot/baseline-jpy-minor 1000000
+  :pilot/target-uplift-bps 500
+  :pilot/minimum-cohort-size 1000
+  :pilot/stop-conditions {:minimum-paid-net-revenue-jpy-minor 900000
+                          :maximum-refund-rate-bps 800}
+  :pilot/approval {:approval/status :approved
+                   :approval/by "jk-revenue-owner"
+                   :approval/evidence-ref :approval.evidence/checkout-pilot-v1}
+  :pilot/prohibited-actions #{:payments :ad-spend :publishing :external-writes}}
+ :observation
+ {:pilot/id :pilot/checkout-copy-2026-08
+  :pilot/cohort {:dimension/type :campaign :dimension/value "checkout-copy-v1"}
+  :window/start "2026-07-15T00:00:00Z"
+  :window/end "2026-07-29T00:00:00Z"
+  :cohort-size 1200
+  :paid-net-revenue-jpy-minor 1060000
+  :refunds-jpy-minor 30000
+  :settled-gross-jpy-minor 1200000}}

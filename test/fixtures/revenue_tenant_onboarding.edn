@@ -1,0 +1,21 @@
+{:onboarding/type :revenue.tenant/onboarding
+ :onboarding/version 1
+ :tenant {:tenant/id :tenant/club-shinshi
+          :tenant/legal-name "JK株式会社"
+          :tenant/data-classification :data.classification/aggregate-only}
+ :service {:service/operator-legal-name "Gftd Japan株式会社"
+           :service/capabilities #{:revenue.capability/read-aggregate-metrics
+                                   :revenue.capability/draft-experiments
+                                   :revenue.capability/request-approval}
+           :service/credential-mode :credential.mode/not-provisioned}
+ :approvals [{:approval/role :human.role/tenant-owner
+              :approval/actor-id "jk-revenue-owner"
+              :approval/status :approval.status/approved
+              :approval/evidence-ref :approval.evidence/tenant-owner-v1}
+             {:approval/role :human.role/itonami-operator
+              :approval/actor-id "itonami-operator"
+              :approval/status :approval.status/approved
+              :approval/evidence-ref :approval.evidence/operator-v1}]
+ :audit {:audit/owner-role :human.role/tenant-owner
+         :audit/custodian-role :human.role/itonami-operator
+         :audit/retention-days 2555}}
