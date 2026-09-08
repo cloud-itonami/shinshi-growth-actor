@@ -6,7 +6,7 @@
   production identity file behind. Adapted from `shinshi.cacao-test`
   (`jk-luxury/club-shinshi/20-actors/shinshi`)."
   (:require [clojure.test :refer [deftest is testing]]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [growth.cacao :as cacao])
   (:import [java.util Base64]))
 

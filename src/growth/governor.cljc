@@ -35,7 +35,7 @@
                              :creator-outreach}) are only auto-commit
                              eligible when :ok? is true (no violations) AND
                              :confidence >= 0.7."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 ;; ───────────────────────── policy tables ─────────────────────────
 
@@ -74,13 +74,13 @@
 ;; ───────────────────────── checks ─────────────────────────
 
 (defn- text-of [proposal]
-  (str/lower-case (str (:summary proposal) " " (:rationale proposal))))
+  (str/lower (str (:summary proposal) " " (:rationale proposal))))
 
 (defn- cited-set [proposal]
-  (set (map (fn [c] (if (keyword? c) c (str/lower-case (str c)))) (:cites proposal))))
+  (set (map (fn [c] (if (keyword? c) c (str/lower (str c)))) (:cites proposal))))
 
 (defn- any-marker? [text cited markers]
-  (boolean (or (some #(and (string? %) (str/includes? text (str/lower-case %))) markers)
+  (boolean (or (some #(and (string? %) (str/includes? text (str/lower %))) markers)
                (some cited markers))))
 
 (defn- unknown-effect-violations [proposal]

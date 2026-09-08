@@ -17,7 +17,7 @@
     - a raw transport failure (http-fn throws) is caught and surfaced the
       same way, for just that field."
   (:require [clojure.test :refer [deftest is testing]]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])
             [growth.facts :as facts]))
