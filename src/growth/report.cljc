@@ -2,7 +2,7 @@
   "ReportActor — plain-text views over the growth-loop SSoT. Renders exactly
   what `growth.store` holds; it does not itself read live data (Phase 0 has
   none — see `growth.facts`)."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [growth.store :as store]))
 
 (defn hypothesis-backlog-text

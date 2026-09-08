@@ -20,7 +20,7 @@
   `(get sbody \"accessJwt\")` against a keyword-keyed real response is
   always nil). Keep these keyword-keyed."
   (:require [clojure.test :refer [deftest is testing]]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [clojure.edn :as edn]
             [growth.aozora :as aozora]
             [growth.cacao :as cacao]

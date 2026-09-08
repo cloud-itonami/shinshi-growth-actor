@@ -45,7 +45,7 @@
   surfaced as an explicit `{:growth.fact/status :error :reason .. :detail ..}`
   marker for that one field (see `error?`) — NEVER a fabricated number, and
   NEVER an uncaught throw. Every fetch is a single attempt; no retries."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [growth.store :as store]))
 
 (def readonly-secret-env-var

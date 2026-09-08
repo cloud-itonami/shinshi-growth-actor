@@ -26,7 +26,7 @@
   manual `createSession` retry outside this fn succeeded at 200, but
   `publish!` itself always threw \"aozora createSession failed\")."
   (:require [kotoba.net.jvm-host :as jvm-host]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [growth.cacao :as cacao]
             [growth.publisher :as publisher])
              [java.time Instant]

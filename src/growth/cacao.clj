@@ -24,7 +24,7 @@
   execution path for JDK crypto yet (root CLAUDE.md 2026-07-06 runtime note) —
   port when that mechanism exists."
   (:require [clojure.edn :as edn]
-            [clojure.string :as str])
+            [kotoba.lang.text :as str])
   (:import [java.security KeyPairGenerator MessageDigest Signature KeyFactory]
            [java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec]
            [java.io ByteArrayOutputStream]

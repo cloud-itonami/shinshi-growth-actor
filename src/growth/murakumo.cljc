@@ -41,7 +41,7 @@
   `:http-fn`/`:json-write`/`:json-read` must always be injected (throws at
   the `murakumo-model` call boundary otherwise) — never touch the network
   from a bare namespace-level call."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [langchain.model :as model]))
 
 (def default-url
