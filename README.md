@@ -36,7 +36,7 @@ for the full decision record, and [`docs/business-model.md`](docs/business-model
 ## Phase 0 scope (this repo, as committed)
 
 **This build stays at Phase 0**: mock advisor + in-memory Store only, no live
-club-shinshi data, no real execution. See `src/growth/phase.cljc` for the
+club-shinshi data, no real execution. See `src/growth/phase.kotoba` for the
 full 0→3 rollout ladder and `src/growth/facts.clj` for the (stub-only, not
 wired) production data-adapter shape. Phase 1 (read-only live metrics) and
 Phase 2 (real LLM against live data, still human-gated) are separate,
@@ -65,25 +65,25 @@ human. Soft cases (low confidence / high-stakes / creator-payout-touching)
 always go to the human approval workflow — even when the proposal is
 otherwise clean and high-confidence.
 
-The deterministic, privacy-safe aggregate metric contract for acquisition, activation, conversion, paid net revenue, and retention is defined in `src/growth/metrics.cljc`, with a typed EDN fixture in `test/fixtures/growth_metrics.edn`. Formula, versioning, rounding, null, cohort, and operator rules are documented in `docs/operator-guide.md`.
+The deterministic, privacy-safe aggregate metric contract for acquisition, activation, conversion, paid net revenue, and retention is defined in `src/growth/metrics.kotoba`, with a typed EDN fixture in `test/fixtures/growth_metrics.edn`. Formula, versioning, rounding, null, cohort, and operator rules are documented in `docs/operator-guide.md`.
 
 ## Layout
 
 | File | Actor / role |
 |---|---|
-| `src/growth/growthllm.cljc` | **Advisor** protocol — `mock-advisor` (default, only advisor wired in Phase 0) ‖ `llm-advisor` (real `langchain.model` ChatModel, not wired) |
-| `src/growth/governor.cljc` | **MarketingGovernor** — charter-clean · age-verification-untouchable · unknown-effect (hard); creator-payout-protection · high-stakes · confidence-floor (soft) |
-| `src/growth/phase.cljc` | **Phase 0→3 rollout** — this repo's own `default-phase` is **0** |
-| `src/growth/operation.cljc` | **OperationActor** — langgraph-clj StateGraph (1 run = 1 growth-loop op); Store/Advisor/Phase injected |
-| `src/growth/store.cljc` | **Store** protocol — `MemStore` (default) ‖ `DatomicStore` (`langchain.db`, swappable to Datomic Local / kotoba-server) + append-only ledger, `:growth.tenant/id "club-shinshi"` tagged |
+| `src/growth/growthllm.kotoba` | **Advisor** protocol — `mock-advisor` (default, only advisor wired in Phase 0) ‖ `llm-advisor` (real `langchain.model` ChatModel, not wired) |
+| `src/growth/governor.kotoba` | **MarketingGovernor** — charter-clean · age-verification-untouchable · unknown-effect (hard); creator-payout-protection · high-stakes · confidence-floor (soft) |
+| `src/growth/phase.kotoba` | **Phase 0→3 rollout** — this repo's own `default-phase` is **0** |
+| `src/growth/operation.kotoba` | **OperationActor** — langgraph-clj StateGraph (1 run = 1 growth-loop op); Store/Advisor/Phase injected |
+| `src/growth/store.kotoba` | **Store** protocol — `MemStore` (default) ‖ `DatomicStore` (`langchain.db`, swappable to Datomic Local / kotoba-server) + append-only ledger, `:growth.tenant/id "club-shinshi"` tagged |
 | `src/growth/facts.clj` | **production adapter STUB** — NOT wired; documents the `ai-gftd-shinshi` internal D1 dispatch API this would eventually call, and the secrets-sharing decision that blocks it |
-| `src/growth/report.cljc` | plain-text views over the hypothesis backlog / experiment ledger / audit ledger |
-| `src/growth/sim.cljc` | demo driver (`clojure -M:dev:run`) |
-| `src/growth/metrics.cljc` | versioned aggregate metric definitions, closed validation, and deterministic integer calculations |
-| `src/growth/tenant_onboarding.cljc` | closed offline EDN contract for tenant identity, two-human approval, allowed capabilities, and audit ownership; never provisions credentials |
-| `src/growth/revenue_agent.cljc` | bounded governed revenue tick: consumes injected live read-only aggregate facts, enforces tenant capabilities and explicit human decisions, ranks approved experiments, and emits audit events without actuation |
-| `test/growth/metrics_test.cljc` | golden fixture, privacy, validation, rounding, zero-denominator, and formula tests |
-| `test/growth/contract_test.cljc` | MemStore ≡ DatomicStore parity · no-actuation (malicious proposal → hold) · high-stakes-always-escalates · dark-pattern-rejected · confidence-floor · phase-0-holds-everything — **13 tests / 44 assertions, 0 failures** |
+| `src/growth/report.kotoba` | plain-text views over the hypothesis backlog / experiment ledger / audit ledger |
+| `src/growth/sim.kotoba` | demo driver (`clojure -M:dev:run`) |
+| `src/growth/metrics.kotoba` | versioned aggregate metric definitions, closed validation, and deterministic integer calculations |
+| `src/growth/tenant_onboarding.kotoba` | closed offline EDN contract for tenant identity, two-human approval, allowed capabilities, and audit ownership; never provisions credentials |
+| `src/growth/revenue_agent.kotoba` | bounded governed revenue tick: consumes injected live read-only aggregate facts, enforces tenant capabilities and explicit human decisions, ranks approved experiments, and emits audit events without actuation |
+| `test/growth/metrics_test.kotoba` | golden fixture, privacy, validation, rounding, zero-denominator, and formula tests |
+| `test/growth/contract_test.kotoba` | MemStore ≡ DatomicStore parity · no-actuation (malicious proposal → hold) · high-stakes-always-escalates · dark-pattern-rejected · confidence-floor · phase-0-holds-everything — **13 tests / 44 assertions, 0 failures** |
 
 ## Run
 
