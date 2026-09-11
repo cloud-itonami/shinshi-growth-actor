@@ -15,7 +15,7 @@
   is what club-shinshi's own `shinshi.aozora` is injected with). An earlier
   version of both this file and `growth.aozora` itself used string-keyed
   fixtures + string-keyed `get` lookups — the tests passed, but
-  `clojure -M:dev:run-live` failed for real every time (`createSession`
+  `kbb -M:dev:run-live` failed for real every time (`createSession`
   always looked rejected even on a genuine HTTP 200, because
   `(get sbody \"accessJwt\")` against a keyword-keyed real response is
   always nil). Keep these keyword-keyed."

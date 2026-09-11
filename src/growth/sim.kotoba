@@ -8,7 +8,7 @@
     op3  proposal that changes the age-verification copy        → age-verification REJECT → hold
     op4  PPV-terms change (implies creator-split change)        → always escalate → human approves → commit
 
-  Run: clojure -M:dev:run"
+  Run: kbb -M:dev:run"
   (:require [langgraph.graph :as g]
             [growth.store :as store]
             [growth.operation :as op]

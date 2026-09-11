@@ -22,7 +22,7 @@
   this file used `(get sbody \"accessJwt\")` (string-keyed) against a
   keyword-keyed `json-read`, so `accessJwt`/`uri`/`cid` extraction silently
   returned nil and `createSession` always looked like it failed even on a
-  real HTTP 200 (found running `clojure -M:dev:run-live` for real — every
+  real HTTP 200 (found running `kbb -M:dev:run-live` for real — every
   manual `createSession` retry outside this fn succeeded at 200, but
   `publish!` itself always threw \"aozora createSession failed\")."
   (:require [kotoba.net.jvm-host :as jvm-host]

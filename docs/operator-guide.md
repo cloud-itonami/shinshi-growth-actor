@@ -8,8 +8,8 @@ actor on club-shinshi's (JK株式会社) behalf.
 ```bash
 git clone git@github.com:gftdcojp/shinshi-growth-actor
 cd shinshi-growth-actor
-clojure -M:dev:test
-clojure -M:dev:run
+kbb -M:dev:test
+kbb -M:dev:run
 ```
 
 The demo uses the built-in synthetic BMC snapshot (`growth.store/demo-data`).
@@ -45,9 +45,9 @@ Validate and calculate a fixture offline:
 Before accepting a contract or fixture change, run every documented check:
 
 ```bash
-clojure -M:dev:test
-clojure -M:lint
-clojure -M:dev:run
+kbb -M:dev:test
+kbb -M:lint
+kbb -M:dev:run
 ```
 
 Changing a formula, event meaning, attribution/cohort window, rounding rule, currency unit, or privacy allow-list requires a new contract version and new golden fixtures. Never reinterpret historical rows under a newer version.
@@ -87,7 +87,7 @@ Operator procedure:
 1. Copy the fixture and change only tenant identity, legal names, opaque human actor IDs, evidence references, and retention duration. Do not insert secrets, tokens, API keys, endpoints, or credentials.
 2. Obtain independent approval from both declared human roles and record durable evidence references outside this repository.
 3. Validate locally with `(growth.tenant-onboarding/validate! contract)`.
-4. Run `clojure -M:dev:test` and `clojure -M:lint`. A valid declaration documents approval; it does not authorize or perform provisioning.
+4. Run `kbb -M:dev:test` and `kbb -M:lint`. A valid declaration documents approval; it does not authorize or perform provisioning.
 5. The tenant owner retains audit ownership; the itonami operator preserves and exports the audit record for the declared retention period. Rejection or validation failure stops onboarding.
 
 ## 5. Governed revenue-agent tick
@@ -115,7 +115,7 @@ Before any Phase 1 work starts:
 - [ ] `growth.facts` implemented and reviewed (currently a stub only)
 - [ ] cloud-itonami's tenant/external-onboarding model extended so
       club-shinshi can be registered as a real itonami tenant
-- [ ] `clojure -M:dev:test` and `clojure -M:lint` still green
+- [ ] `kbb -M:dev:test` and `kbb -M:lint` still green
 - [ ] a written data-flow diagram covering the new cross-repo read path
 - [ ] incident-response contact agreed with club-shinshi's operator
 
