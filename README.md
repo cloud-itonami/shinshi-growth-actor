@@ -78,7 +78,7 @@ The deterministic, privacy-safe aggregate metric contract for acquisition, activ
 | `src/growth/store.kotoba` | **Store** protocol — `MemStore` (default) ‖ `DatomicStore` (`langchain.db`, swappable to Datomic Local / kotoba-server) + append-only ledger, `:growth.tenant/id "club-shinshi"` tagged |
 | `src/growth/facts.clj` | **production adapter STUB** — NOT wired; documents the `ai-gftd-shinshi` internal D1 dispatch API this would eventually call, and the secrets-sharing decision that blocks it |
 | `src/growth/report.kotoba` | plain-text views over the hypothesis backlog / experiment ledger / audit ledger |
-| `src/growth/sim.kotoba` | demo driver (`clojure -M:dev:run`) |
+| `src/growth/sim.kotoba` | demo driver (`kbb -M:dev:run`) |
 | `src/growth/metrics.kotoba` | versioned aggregate metric definitions, closed validation, and deterministic integer calculations |
 | `src/growth/tenant_onboarding.kotoba` | closed offline EDN contract for tenant identity, two-human approval, allowed capabilities, and audit ownership; never provisions credentials |
 | `src/growth/revenue_agent.kotoba` | bounded governed revenue tick: consumes injected live read-only aggregate facts, enforces tenant capabilities and explicit human decisions, ranks approved experiments, and emits audit events without actuation |
@@ -88,9 +88,9 @@ The deterministic, privacy-safe aggregate metric contract for acquisition, activ
 ## Run
 
 ```bash
-clojure -M:dev:run     # demo: content-experiment / dark-pattern / age-gate / ppv-terms across Phase 0→3
-clojure -M:dev:test    # governor contract · store parity (Mem≡Datomic)
-clojure -M:lint        # clj-kondo (errors fail; CI mirrors this)
+kbb -M:dev:run     # demo: content-experiment / dark-pattern / age-gate / ppv-terms across Phase 0→3
+kbb -M:dev:test    # governor contract · store parity (Mem≡Datomic)
+kbb -M:lint        # clj-kondo (errors fail; CI mirrors this)
 ```
 
 ## Status

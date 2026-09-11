@@ -25,4 +25,4 @@ Refund rate and uplift use integer basis points with deterministic half-up round
 
 ## Verification
 
-Run `clojure -M:dev:test`, `clojure -M:lint`, and `git diff --check`. Changes to metric semantics, rounding, schema, or stop precedence require a new evaluator version and updated golden fixture.
+Run `kbb -M:dev:test`, `kbb -M:lint`, and `git diff --check`. Changes to metric semantics, rounding, schema, or stop precedence require a new evaluator version and updated golden fixture.

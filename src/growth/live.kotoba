@@ -33,7 +33,7 @@
   :marketing-copy / :creator-outreach proposal (see growth.operation's
   publishable-ops) is published for real to the aozora PDS under that DID.
 
-  Run: KOTOBA_REPOSITORY_STATE_FILE=/path/to/state.edn clojure -M:dev:run-live"
+  Run: KOTOBA_REPOSITORY_STATE_FILE=/path/to/state.edn kbb -M:dev:run-live"
   (:require [langchain.edn-persist :as edn-persist]
             [langchain.jvm :as jvm]
             [langgraph.graph :as g]

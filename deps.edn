@@ -16,9 +16,9 @@
   :dev {:override-deps
         {io.github.kotoba-lang/langchain
          {:local/root "../../kotoba-lang/langchain"}}}
-  ;; clojure -M:dev:run  → drive the demo through one OperationActor
+  ;; kbb -M:dev:run  → drive the demo through one OperationActor
   :run {:main-opts ["-m" "growth.sim"]}
-  ;; clojure -M:dev:run-live  → Phase 2: same OperationActor, seeded from LIVE
+  ;; kbb -M:dev:run-live  → Phase 2: same OperationActor, seeded from LIVE
   ;; club-shinshi metrics (growth.live, growth.facts) instead of demo-data.
   ;; http-kit/jsonista here only (langchain.jvm's own zero-dep-by-default
   ;; convention — see its docstring) — growth.facts itself stays dep-free.
