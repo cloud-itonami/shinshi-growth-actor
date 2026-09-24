@@ -7,11 +7,11 @@
       "enabled": true,
       "enabled_toolsets": null,
       "id": "28c700633652",
-      "model": "qwen3.8-27b-whitehacker",
+      "model": "murakumo/free",
       "name": "shinshi-mktg-tick",
       "no_agent": false,
       "prompt": "shinshi.club の organic growth tick。90-docs/business/metrics/club-shinshi.edn を読み、organic SEO / Bluesky !ad federate / aozora クロスプロモのうち最高レバレッジの成長アクションを 1 件、提案または PR (メタ/構造化データ/sitemap 等) として実施。外部投稿は draft のみ。結果を簡潔に報告。",
-      "provider": "kotoba",
+      "provider": "murakumo",
       "schedule": {
         "kind": "cron",
         "expr": "0 13 * * *",
